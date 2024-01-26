@@ -1,2 +1,3 @@
 requests~=2.31.0
 parsel~=1.8.1
+tqdm
