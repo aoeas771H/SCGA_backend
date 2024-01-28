@@ -36,6 +36,8 @@ class PypiPackageInfo(IPackageInfo):
 
     def __loadJson__(self):
         url = "https://pypi.org/pypi/{}/json".format(self.packageName)
+        print("url")
+        print(url)
         res = requests.get(url)
         self.__pypiJson__ = res.json()
         if 'info' not in self.__pypiJson__:
@@ -64,12 +66,37 @@ class PypiPackageInfo(IPackageInfo):
 
         self.__cachedReleaseList__ = ans
         return ans
+    
+    def getAverageUpdateInterval(self):
+        """
+        计算并返回平均更新间隔（以天为单位）。
+        """
+        version_list = self.getVersionList()
+        if not version_list:
+            return None
+
+        # 确保版本列表按时间排序
+        version_list.sort(key=lambda x: x.versionTime)
+
+        # 计算相邻版本之间的时间间隔
+        intervals = [
+            (version_list[i].versionTime - version_list[i - 1].versionTime).days
+            for i in range(1, len(version_list))
+        ]
+
+        if not intervals:
+            return None
+
+        # 计算平均间隔
+        average_interval = sum(intervals) / len(intervals)
+        return average_interval
 
     def getIssueCount(self):
         """
 
         :return: 返回条件下的open,closed状态的issue数量
         """
+       
         if self.__pypiJson__ is None:
             self.__loadJson__()
 
@@ -79,7 +106,7 @@ class PypiPackageInfo(IPackageInfo):
         openCount = githubUtils.getIssueCount(self.__authorName__, self.__repoName__, "is:open " + self.githubIssueFilterSuffix)
         closeCount = githubUtils.getIssueCount(self.__authorName__, self.__repoName__, "is:closed " + self.githubIssueFilterSuffix)
 
-        self.__cachedIssueCount__ = openCount, closeCount
+        self.__cachedIssueCount__ = openCount+closeCount
         return self.__cachedIssueCount__
 
     def getLastCommitTime(self):
@@ -105,4 +132,5 @@ if __name__ == "__main__":
     page = PypiPackageInfo("flask")
     print(page.getIssueCount())
     print(page.getLastCommitTime())
-    print(page.getVersionList())
+    #print(page.getVersionList())
+    print(page.getAverageUpdateInterval())
