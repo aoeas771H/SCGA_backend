@@ -4,6 +4,12 @@ import requests
 import datetime
 import githubUtils
 
+def is_last_part_issues(url):
+    # 使用 rsplit 方法从右侧分割字符串一次，获取最后一个 '/' 后的部分
+    parts = url.rsplit('/', 1)
+    if len(parts) == 2:  # 确保存在 '/' 分割的部分
+        return parts[1].lower() == 'issues'  # 比较是否等于 'issue'，忽略大小写
+    return False
 
 class IPackageInfo(ABC):
     @abstractmethod
@@ -43,7 +49,12 @@ class PypiPackageInfo(IPackageInfo):
                 raise Exception(self.__pypiJson__['message'])
             raise Exception('Package not found')
 
-        issueLink = self.__pypiJson__['info']['project_urls']['Issue Tracker']
+        targetDict = self.__pypiJson__['info']['project_urls']
+        for val in targetDict.values():
+            if is_last_part_issues(val):
+                issueLink=val
+                break
+        print(issueLink)
         self.__authorName__, self.__repoName__ = githubUtils.extractAuthorAndRepoName(issueLink)
 
     def getVersionList(self):
