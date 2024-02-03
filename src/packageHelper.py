@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 import requests
 import datetime
 import githubUtils
-
+ 
 
 class IPackageInfo(ABC):
     @abstractmethod
@@ -36,8 +36,7 @@ class PypiPackageInfo(IPackageInfo):
 
     def __loadJson__(self):
         url = "https://pypi.org/pypi/{}/json".format(self.packageName)
-        print("url")
-        print(url)
+ 
         res = requests.get(url)
         self.__pypiJson__ = res.json()
         if 'info' not in self.__pypiJson__:
@@ -45,8 +44,17 @@ class PypiPackageInfo(IPackageInfo):
                 raise Exception(self.__pypiJson__['message'])
             raise Exception('Package not found')
 
-        issueLink = self.__pypiJson__['info']['project_urls']['Issue Tracker']
-        self.__authorName__, self.__repoName__ = githubUtils.extractAuthorAndRepoName(issueLink)
+        targetDict = self.__pypiJson__['info']['project_urls']
+        self.githubFlag=0
+        for val in targetDict.values():
+            if "github.com" in val:
+                Link=val
+                self.githubFlag=1
+                break
+        if(self.githubFlag):
+            self.__authorName__, self.__repoName__ = githubUtils.extractAuthorAndRepoName( Link)
+        else:
+            print("this package, no github respository")
 
     def getVersionList(self):
         """
@@ -61,6 +69,7 @@ class PypiPackageInfo(IPackageInfo):
 
         ans: 'list[ReleaseInfo]' = []
         for versionName, obj in self.__pypiJson__['releases'].items():
+            #print(obj)
             t = datetime.datetime.strptime(obj[-1]['upload_time_iso_8601'], '%Y-%m-%dT%H:%M:%S.%fZ')
             ans.append(ReleaseInfo(versionName, t))
 
@@ -71,53 +80,69 @@ class PypiPackageInfo(IPackageInfo):
         """
         计算并返回平均更新间隔（以天为单位）。
         """
-        version_list = self.getVersionList()
-        if not version_list:
-            return None
+        try:
+            version_list = self.getVersionList()
+            if not version_list:
+                return None
 
-        # 确保版本列表按时间排序
-        version_list.sort(key=lambda x: x.versionTime)
+            # 确保版本列表按时间排序
+            version_list.sort(key=lambda x: x.versionTime)
 
-        # 计算相邻版本之间的时间间隔
-        intervals = [
-            (version_list[i].versionTime - version_list[i - 1].versionTime).days
-            for i in range(1, len(version_list))
-        ]
+            # 计算相邻版本之间的时间间隔
+            intervals = [
+                (version_list[i].versionTime - version_list[i - 1].versionTime).days
+                for i in range(1, len(version_list))
+            ]
 
-        if not intervals:
-            return None
+            if not intervals:
+                return None
 
-        # 计算平均间隔
-        average_interval = sum(intervals) / len(intervals)
-        return average_interval
+            # 计算平均间隔
+            average_interval = sum(intervals) / len(intervals)
+            return average_interval
+        except:
+            return "N/A"
 
     def getIssueCount(self):
         """
 
         :return: 返回条件下的open,closed状态的issue数量
         """
-       
-        if self.__pypiJson__ is None:
-            self.__loadJson__()
+        try:
+            if self.__pypiJson__ is None:
+                self.__loadJson__()
 
-        if self.__cachedIssueCount__ is not None:
+            if self.__cachedIssueCount__ is not None:
+                return self.__cachedIssueCount__
+
+            openCount = githubUtils.getIssueCount(self.__authorName__, self.__repoName__, "is:open " + self.githubIssueFilterSuffix)
+            closeCount = githubUtils.getIssueCount(self.__authorName__, self.__repoName__, "is:closed " + self.githubIssueFilterSuffix)
+
+            self.__cachedIssueCount__ = openCount+closeCount
             return self.__cachedIssueCount__
-
-        openCount = githubUtils.getIssueCount(self.__authorName__, self.__repoName__, "is:open " + self.githubIssueFilterSuffix)
-        closeCount = githubUtils.getIssueCount(self.__authorName__, self.__repoName__, "is:closed " + self.githubIssueFilterSuffix)
-
-        self.__cachedIssueCount__ = openCount+closeCount
-        return self.__cachedIssueCount__
+        except:
+            return "N/A"
 
     def getLastCommitTime(self):
-        if self.__pypiJson__ is None:
-            self.__loadJson__()
+        try:
+            if self.__pypiJson__ is None:
+                self.__loadJson__()
 
-        if self.__cachedLastCommitTime__ is not None:
-            return self.__cachedLastCommitTime__
+            if self.__cachedLastCommitTime__ is not None:
+                return self.__cachedLastCommitTime__
 
-        ans = githubUtils.getLatestCommitTime(self.__authorName__, self.__repoName__)
-        return ans
+            ans = githubUtils.getLatestCommitTime(self.__authorName__, self.__repoName__)
+            return month_diff(ans)
+        except:
+            return "N/A"
+        # if self.__pypiJson__ is None:
+        #     self.__loadJson__()
+
+        # if self.__cachedLastCommitTime__ is not None:
+        #     return self.__cachedLastCommitTime__
+
+        # ans = githubUtils.getLatestCommitTime(self.__authorName__, self.__repoName__)
+        # return month_diff(ans)
 
     def getConflictScore(self) -> float:
         """
@@ -126,10 +151,17 @@ class PypiPackageInfo(IPackageInfo):
         """
         # TODO
         return 100.0
+    
+def month_diff(target_date):
+    current_date = datetime.datetime.now()
+    year_diff = current_date.year - target_date.year
+    month_diff = current_date.month - target_date.month
 
+    total_months = year_diff * 12 + month_diff
+    return total_months
 
 if __name__ == "__main__":
-    page = PypiPackageInfo("flask")
+    page = PypiPackageInfo("diskcache")
     print(page.getIssueCount())
     print(page.getLastCommitTime())
     #print(page.getVersionList())
