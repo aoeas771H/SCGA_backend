@@ -4,12 +4,6 @@ import requests
 import datetime
 import githubUtils
 
-def is_last_part_issues(url):
-    # 使用 rsplit 方法从右侧分割字符串一次，获取最后一个 '/' 后的部分
-    parts = url.rsplit('/', 1)
-    if len(parts) == 2:  # 确保存在 '/' 分割的部分
-        return parts[1].lower() == 'issues'  # 比较是否等于 'issue'，忽略大小写
-    return False
 
 class IPackageInfo(ABC):
     @abstractmethod
@@ -49,13 +43,18 @@ class PypiPackageInfo(IPackageInfo):
                 raise Exception(self.__pypiJson__['message'])
             raise Exception('Package not found')
 
-        targetDict = self.__pypiJson__['info']['project_urls']
-        for val in targetDict.values():
-            if is_last_part_issues(val):
-                issueLink=val
-                break
-        print(issueLink)
-        self.__authorName__, self.__repoName__ = githubUtils.extractAuthorAndRepoName(issueLink)
+        projectUrls = self.__pypiJson__['info']['project_urls']
+        issueLinkKey = None
+        if 'Issue Tracker' in projectUrls:
+            issueLinkKey = 'Issue Tracker'
+        elif 'Tracker' in projectUrls:
+            issueLinkKey = 'Tracker'
+
+        if issueLinkKey is not None:
+            try:
+                self.__authorName__, self.__repoName__ = githubUtils.extractAuthorAndRepoName(projectUrls[issueLinkKey])
+            except:
+                pass
 
     def getVersionList(self):
         """
@@ -87,6 +86,9 @@ class PypiPackageInfo(IPackageInfo):
         if self.__cachedIssueCount__ is not None:
             return self.__cachedIssueCount__
 
+        if self.__authorName__ is None:
+            raise Exception("Not a Github-based project!")
+
         openCount = githubUtils.getIssueCount(self.__authorName__, self.__repoName__, "is:open " + self.githubIssueFilterSuffix)
         closeCount = githubUtils.getIssueCount(self.__authorName__, self.__repoName__, "is:closed " + self.githubIssueFilterSuffix)
 
@@ -99,6 +101,9 @@ class PypiPackageInfo(IPackageInfo):
 
         if self.__cachedLastCommitTime__ is not None:
             return self.__cachedLastCommitTime__
+
+        if self.__authorName__ is None:
+            raise Exception("Not a Github-based project!")
 
         ans = githubUtils.getLatestCommitTime(self.__authorName__, self.__repoName__)
         return ans
