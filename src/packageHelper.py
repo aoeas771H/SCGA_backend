@@ -161,7 +161,7 @@ def month_diff(target_date):
     return total_months
 
 if __name__ == "__main__":
-    page = PypiPackageInfo("diskcache")
+    page = PypiPackageInfo("grab")
     print(page.getIssueCount())
     print(page.getLastCommitTime())
     #print(page.getVersionList())
