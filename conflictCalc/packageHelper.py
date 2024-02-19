@@ -24,6 +24,7 @@ class PypiPackageInfo(IPackageInfo):
     githubIssueFilterSuffix = "error"
 
     def __init__(self, packageName: str):
+        self.versionList = None
         self.packageName = packageName
         self.__pypiJson__: 'dict | None' = None
 
@@ -33,25 +34,22 @@ class PypiPackageInfo(IPackageInfo):
         self.__cachedReleaseList__: 'list[ReleaseInfo] | None' = None
         self.__cachedIssueCount__: 'tuple[int,int] | None' = None
         self.__cachedLastCommitTime__: 'datetime | None' = None
-        
-    
+
     def getInfo(self):
         """
         return state, data(reason)
         
         """
-        
+
         try:
             self.__loadJson__()
         except:
             return 0, "Network error or Package not found"
-        
-        self.versionList=self.getVersionList()
+
+        self.versionList = self.getVersionList()
 
         if self.__authorName__ is None:
             return 0, "Not a Github-based project!"
-        
-        
 
     def __loadJson__(self):
         url = "https://pypi.org/pypi/{}/json".format(self.packageName)
@@ -64,10 +62,10 @@ class PypiPackageInfo(IPackageInfo):
 
         projectUrls = self.__pypiJson__['info']['project_urls']
         issueLinkKey = None
-        if 'Issue Tracker' in projectUrls:
-            issueLinkKey = 'Issue Tracker'
-        elif 'Tracker' in projectUrls:
-            issueLinkKey = 'Tracker'
+        for key in projectUrls:
+            if projectUrls[key].find("github.com") > 0:
+                issueLinkKey = key
+                break
 
         if issueLinkKey is not None:
             try:
@@ -127,7 +125,7 @@ class PypiPackageInfo(IPackageInfo):
         ans = githubUtils.getLatestCommitTime(self.__authorName__, self.__repoName__)
         return ans
 
-    def getRecommendScore(self) -> float:
+    def getConflictScore(self) -> float:
         """
         计算包的推荐指数
         :return:
@@ -137,5 +135,9 @@ class PypiPackageInfo(IPackageInfo):
 
 
 if __name__ == "__main__":
-    page = PypiPackageInfo("flask")
+    page = PypiPackageInfo("xarray")
+    page.getInfo()
+    print(page.getVersionList())
+    print(page.getLastCommitTime())
+    print(page.getIssueCount())
 
