@@ -135,7 +135,7 @@ class PypiPackageInfo(IPackageInfo):
 
 
 if __name__ == "__main__":
-    page = PypiPackageInfo("xarray")
+    page = PypiPackageInfo("textdistance")
     page.getInfo()
     print(page.getVersionList())
     print(page.getLastCommitTime())

@@ -41,7 +41,10 @@ def getIssueCount(author: str, repo: str, issueFilter: str):
         "per_page": 1
     }
     obj = sendGithubRequest("search/issues", queryString)
-    return obj["total_count"]
+    if "total_count" in obj:
+        return obj["total_count"]
+    else:
+        return 0
 
 
 def extractAuthorAndRepoName(url: str) -> tuple:
