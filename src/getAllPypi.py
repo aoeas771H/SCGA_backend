@@ -30,16 +30,17 @@ def save_packages_to_file(input_file, output_file):
                     package_name=package_name[:-1] 
                     print(package_name)
                     page=PypiPackageInfo(package_name)
-                    issueNum=page.getIssueCount()
-                    monthDis=page.getLastCommitTime()
-                    updateDayFreq=page.getAverageUpdateInterval()
-                    content=package_name+' ' +str(issueNum)+ ' '+str(monthDis) +' '+ str(updateDayFreq)+"\n"
+                    state,reason,data=page.getInfo()
+
+                    if state:
+                        content=package_name+' ' +str(state)+ ' '+str(reason) +' '+str(data['updateScore'])+' '+str(data['solveScore'])+' '+str(data['hotScore'])+' '+str(data['maintenanceScore'])+' '+str(data['recommendScore'])+"\n"
+                    
+                    else:
+                        content=package_name+' ' +str(state)+ ' '+str(reason)+"\n"   
                     print(content)
                     file.write(content)
-                 
-                    errfile.write(package_name+"\n")
                 
             
-save_packages_to_file("output-1.txt","data-1.txt")
+save_packages_to_file("output-1.txt","data-2.txt")
 
  

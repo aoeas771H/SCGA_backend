@@ -4,12 +4,6 @@ import requests
 import datetime
 import githubUtils
 
-def is_last_part_issues(url):
-    # 使用 rsplit 方法从右侧分割字符串一次，获取最后一个 '/' 后的部分
-    parts = url.rsplit('/', 1)
-    if len(parts) == 2:  # 确保存在 '/' 分割的部分
-        return parts[1].lower() == 'issues'  # 比较是否等于 'issue'，忽略大小写
-    return False
 
 class IPackageInfo(ABC):
     @abstractmethod
@@ -39,6 +33,25 @@ class PypiPackageInfo(IPackageInfo):
         self.__cachedReleaseList__: 'list[ReleaseInfo] | None' = None
         self.__cachedIssueCount__: 'tuple[int,int] | None' = None
         self.__cachedLastCommitTime__: 'datetime | None' = None
+        
+    
+    def getInfo(self):
+        """
+        return state, data(reason)
+        
+        """
+        
+        try:
+            self.__loadJson__()
+        except:
+            return 0, "Network error or Package not found"
+        
+        self.versionList=self.getVersionList()
+
+        if self.__authorName__ is None:
+            return 0, "Not a Github-based project!"
+        
+        
 
     def __loadJson__(self):
         url = "https://pypi.org/pypi/{}/json".format(self.packageName)
@@ -49,13 +62,18 @@ class PypiPackageInfo(IPackageInfo):
                 raise Exception(self.__pypiJson__['message'])
             raise Exception('Package not found')
 
-        targetDict = self.__pypiJson__['info']['project_urls']
-        for val in targetDict.values():
-            if is_last_part_issues(val):
-                issueLink=val
-                break
-        print(issueLink)
-        self.__authorName__, self.__repoName__ = githubUtils.extractAuthorAndRepoName(issueLink)
+        projectUrls = self.__pypiJson__['info']['project_urls']
+        issueLinkKey = None
+        if 'Issue Tracker' in projectUrls:
+            issueLinkKey = 'Issue Tracker'
+        elif 'Tracker' in projectUrls:
+            issueLinkKey = 'Tracker'
+
+        if issueLinkKey is not None:
+            try:
+                self.__authorName__, self.__repoName__ = githubUtils.extractAuthorAndRepoName(projectUrls[issueLinkKey])
+            except:
+                pass
 
     def getVersionList(self):
         """
@@ -87,6 +105,9 @@ class PypiPackageInfo(IPackageInfo):
         if self.__cachedIssueCount__ is not None:
             return self.__cachedIssueCount__
 
+        if self.__authorName__ is None:
+            raise Exception("Not a Github-based project!")
+
         openCount = githubUtils.getIssueCount(self.__authorName__, self.__repoName__, "is:open " + self.githubIssueFilterSuffix)
         closeCount = githubUtils.getIssueCount(self.__authorName__, self.__repoName__, "is:closed " + self.githubIssueFilterSuffix)
 
@@ -100,12 +121,15 @@ class PypiPackageInfo(IPackageInfo):
         if self.__cachedLastCommitTime__ is not None:
             return self.__cachedLastCommitTime__
 
+        if self.__authorName__ is None:
+            raise Exception("Not a Github-based project!")
+
         ans = githubUtils.getLatestCommitTime(self.__authorName__, self.__repoName__)
         return ans
 
-    def getConflictScore(self) -> float:
+    def getRecommendScore(self) -> float:
         """
-        怎么计算包的冲突指数？
+        计算包的推荐指数
         :return:
         """
         # TODO
@@ -114,6 +138,4 @@ class PypiPackageInfo(IPackageInfo):
 
 if __name__ == "__main__":
     page = PypiPackageInfo("flask")
-    print(page.getIssueCount())
-    print(page.getLastCommitTime())
-    print(page.getVersionList())
+
