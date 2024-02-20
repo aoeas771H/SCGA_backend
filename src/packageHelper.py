@@ -123,10 +123,10 @@ class PypiPackageInfo(IPackageInfo):
 
         projectUrls = self.__pypiJson__['info']['project_urls']
         issueLinkKey = None
-        if 'Issue Tracker' in projectUrls:
-            issueLinkKey = 'Issue Tracker'
-        elif 'Tracker' in projectUrls:
-            issueLinkKey = 'Tracker'
+        for key in projectUrls:
+            if projectUrls[key].find("github.com") > 0:
+                issueLinkKey = key
+                break
 
         if issueLinkKey is not None:
             try:
@@ -196,7 +196,10 @@ class PypiPackageInfo(IPackageInfo):
 
 
 if __name__ == "__main__":
-    page = PypiPackageInfo("flask")
+    page = PypiPackageInfo("audiomentations")
     page.getInfo()
+    print(page.getVersionList())
+    print(page.getLastCommitTime())
+    print(page.getIssueCount())
     
 
