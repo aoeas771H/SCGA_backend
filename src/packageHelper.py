@@ -5,7 +5,8 @@ import datetime
 import githubUtils
 
 def month_diff(target_date):
-    current_date = datetime.now()
+    #print(target_date)
+    current_date = datetime.datetime.now()
     year_diff = current_date.year - target_date.year
     month_diff = current_date.month - target_date.month
 
@@ -50,13 +51,13 @@ class PypiPackageInfo(IPackageInfo):
         return state, reason, data
         
         """
-        
+        self.info={}
         try:
             self.__loadJson__()
         except:
             return 0, "Network error or Package not found", self.info
         
-        self.info={}
+         
         
         self.info['versionList']=self.getVersionList()
         self.info['averageUpdateInterval']=self.getAverageUpdateInterval()
@@ -69,11 +70,11 @@ class PypiPackageInfo(IPackageInfo):
         
         self.getIssueCount()
         
-        sumCount=self.closeCount+self.openCount
+        self.sumCount=self.closeCount+self.openCount
         self.info['solveScore']=solveScore=self.closeCount/max(1,self.sumCount)*10
         
         
-        hotScore=sumCount/1000
+        hotScore=self.sumCount/1000
         self.info['hotScore']=min(1,max(hotScore,2))*10
         
          
