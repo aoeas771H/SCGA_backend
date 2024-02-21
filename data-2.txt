@@ -1,26 +1,7 @@
-textdistance 0 Not a Github-based project!
-hypothesis 0 Not a Github-based project!
-textdistance 0 Not a Github-based project!
-hypothesis 0 Network error or Package not found
+textdistance 1 ok 10 0.0 2 8.0 54.0
+hypothesis 1 ok 10 9.781818181818181 7.416198487095663 9.0 91.78694242873678
 streets 0 Network error or Package not found
-textdistance 0 Not a Github-based project!
-hypothesis 0 Not a Github-based project!
-streets 0 Network error or Package not found
-textdistance 0 Not a Github-based project!
-hypothesis 0 Not a Github-based project!
-streets 0 Network error or Package not found
-textdistance 0 Not a Github-based project!
-hypothesis 0 Not a Github-based project!
-streets 0 Network error or Package not found
-textdistance 0 Not a Github-based project!
-hypothesis 0 Not a Github-based project!
-streets 0 Network error or Package not found
-textdistance 0 Not a Github-based project!
-hypothesis 0 Not a Github-based project!
-streets 0 Network error or Package not found
-textdistance 0 Not a Github-based project!
-hypothesis 0 Not a Github-based project!
-streets 0 Network error or Package not found
-textdistance 0 Not a Github-based project!
-hypothesis 0 Not a Github-based project!
-streets 0 Network error or Package not found
+audiomentations 1 ok 10 8.823529411764707 2 8.5 77.30882352941177
+py_stringmatching 0 Not a Github-based project!
+cftime 0 Network error or Package not found
+pyathena 1 ok 10 9.3 3.1622776601683795 9.0 82.07455532033676

@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 import requests
 import datetime
 import githubUtils
-
+import numpy as np
 def month_diff(target_date):
     #print(target_date)
     current_date = datetime.datetime.now()
@@ -60,9 +60,10 @@ class PypiPackageInfo(IPackageInfo):
          
         
         self.info['versionList']=self.getVersionList()
+        
         self.info['averageUpdateInterval']=self.getAverageUpdateInterval()
-        updateScore=360/self.info['averageUpdateInterval']#小于一年的更新频率，就拿10分
-        self.info['updateScore']=min(1,max(updateScore,2))*10
+        updateScore=180/self.info['averageUpdateInterval']#小于一年的更新频率，就拿10分
+        self.info['updateScore']=updateScore=min(1,max(updateScore,0.2))*10
         
         
         if self.__authorName__ is None:
@@ -74,12 +75,12 @@ class PypiPackageInfo(IPackageInfo):
         self.info['solveScore']=solveScore=self.closeCount/max(1,self.sumCount)*10
         
         
-        hotScore=self.sumCount/1000
-        self.info['hotScore']=min(1,max(hotScore,2))*10
+        hotScore=np.sqrt(self.sumCount/10)
+        self.info['hotScore']=hotScore=min(10,max(hotScore,2))
         
          
-        maintenanceScore=12-month_diff(self.getLastCommitTime())/2
-        self.info['maintenanceScore']=min(10,max(maintenanceScore,2))
+        maintenanceScore=9-month_diff(self.getLastCommitTime())/2
+        self.info['maintenanceScore']=maintenanceScore=min(10,max(maintenanceScore,2))
         
         self.info['recommendScore']=3*updateScore+2.5*solveScore+2*hotScore+2.5*maintenanceScore
         
@@ -184,6 +185,7 @@ class PypiPackageInfo(IPackageInfo):
             raise Exception("Not a Github-based project!")
 
         ans = githubUtils.getLatestCommitTime(self.__authorName__, self.__repoName__)
+        print(ans)
         return ans
 
     def getRecommendScore(self) -> float:
