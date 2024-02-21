@@ -148,6 +148,8 @@ class PypiPackageInfo(IPackageInfo):
 
         ans: 'list[ReleaseInfo]' = []
         for versionName, obj in self.__pypiJson__['releases'].items():
+            if len(obj) < 1:
+                continue
             t = datetime.datetime.strptime(obj[-1]['upload_time_iso_8601'], '%Y-%m-%dT%H:%M:%S.%fZ')
             ans.append(ReleaseInfo(versionName, t))
 
@@ -198,7 +200,7 @@ class PypiPackageInfo(IPackageInfo):
 
 
 if __name__ == "__main__":
-    page = PypiPackageInfo("audiomentations")
+    page = PypiPackageInfo("flask-restful")
     page.getInfo()
     print(page.getVersionList())
     print(page.getLastCommitTime())
