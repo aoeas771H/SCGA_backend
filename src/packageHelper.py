@@ -149,7 +149,13 @@ class PypiPackageInfo(IPackageInfo):
         for versionName, obj in self.__pypiJson__['releases'].items():
             if len(obj) < 1:
                 continue
-            t = datetime.datetime.strptime(obj[-1]['upload_time_iso_8601'], '%Y-%m-%dT%H:%M:%S.%fZ')
+            timeStr: str = obj[-1]['upload_time_iso_8601']
+
+            # 解决pypi日期不规范的问题
+            if timeStr.find(".") > -1:
+                t = datetime.datetime.strptime(obj[-1]['upload_time_iso_8601'], '%Y-%m-%dT%H:%M:%S.%fZ')
+            else:
+                t = datetime.datetime.strptime(obj[-1]['upload_time_iso_8601'], '%Y-%m-%dT%H:%M:%SZ')
             ans.append(ReleaseInfo(versionName, t))
 
         self.__cachedReleaseList__ = ans
@@ -198,7 +204,7 @@ class PypiPackageInfo(IPackageInfo):
 
 
 if __name__ == "__main__":
-    page = PypiPackageInfo("flask-restful")
+    page = PypiPackageInfo("joblib")
     page.getInfo()
     print(page.getVersionList())
     print(page.getLastCommitTime())
