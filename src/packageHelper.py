@@ -124,7 +124,7 @@ class PypiPackageInfo(IPackageInfo):
         projectUrls = self.__pypiJson__['info']['project_urls']
         issueLinkKey = None
         for key in projectUrls:
-            if projectUrls[key].find("github.com") > 0:
+            if projectUrls[key].find("github.com") > 0 and projectUrls[key].find("github.com/downloads") == -1:
                 issueLinkKey = key
                 break
 
@@ -204,7 +204,7 @@ class PypiPackageInfo(IPackageInfo):
 
 
 if __name__ == "__main__":
-    page = PypiPackageInfo("SpeechRecognition")
+    page = PypiPackageInfo("bamboo")
     print(page.getVersionList())
     print(page.getLastCommitTime())
     print(page.getIssueCount())
