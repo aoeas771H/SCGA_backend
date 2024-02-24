@@ -57,12 +57,19 @@ def extractAuthorAndRepoName(url: str) -> tuple:
     Returns:
     tuple: A tuple containing the author and name of the GitHub repository.
     """
-    split_url = url.split("#")[0].split('/')
+    split_url = url.split('/')
     if split_url[2] != "github.com":
         raise Exception("Not a Github-based project!")
 
     author = split_url[3]
     repo_name = split_url[4]
+
+    if repo_name.find("#") > 0:
+        repo_name = repo_name.split("#")[0]
+
+    if repo_name.find(".git") > 0:
+        repo_name = repo_name.replace(".git", "")
+
     return author, repo_name
 
 
