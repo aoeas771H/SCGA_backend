@@ -204,8 +204,7 @@ class PypiPackageInfo(IPackageInfo):
 
 
 if __name__ == "__main__":
-    page = PypiPackageInfo("joblib")
-    page.getInfo()
+    page = PypiPackageInfo("SpeechRecognition")
     print(page.getVersionList())
     print(page.getLastCommitTime())
     print(page.getIssueCount())
