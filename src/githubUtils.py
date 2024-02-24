@@ -26,6 +26,9 @@ def sendGithubRequest(path: str, queryString: 'dict|None' = None):
 def getLatestCommitTime(author: str, repo: str) -> 'datetime.datetime | None':
     path = 'repos/{}/{}/commits'.format(author, repo)
     obj = sendGithubRequest(path)
+    if "message" in obj and obj['message'] == "Not Found":
+        raise Exception("Github repo not found: author={},repo={}".format(author, repo))
+
     if not isinstance(obj, list):
         return None
 
