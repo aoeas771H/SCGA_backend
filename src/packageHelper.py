@@ -5,7 +5,7 @@ import datetime
 import githubUtils
 import numpy as np
 def month_diff(target_date):
-    #print(target_date)
+    # print(target_date)
     current_date = datetime.datetime.now()
     year_diff = current_date.year - target_date.year
     month_diff = current_date.month - target_date.month
@@ -29,12 +29,12 @@ class ReleaseInfo:
 
 # 输入一个pypi中有的包名，输出其最近几个版本的更新时间。藉由此，我们可以评估出这个包的更新频率
 class PypiPackageInfo(IPackageInfo):
-    
-
     # github issue界面的筛选表达式，前面的open或者close会自动加上
     githubIssueFilterSuffix = "error"
 
     def __init__(self, packageName: str):
+        self.closeCount = None
+        self.openCount = None
         self.packageName = packageName
         self.__pypiJson__: 'dict | None' = None
 
@@ -44,14 +44,13 @@ class PypiPackageInfo(IPackageInfo):
         self.__cachedReleaseList__: 'list[ReleaseInfo] | None' = None
         self.__cachedIssueCount__: 'tuple[int,int] | None' = None
         self.__cachedLastCommitTime__: 'datetime | None' = None
-        
-    
+
     def getInfo(self):
         """
         return state, reason, data
         
         """
-        self.info={}
+        self.info = {}
         try:
             self.__loadJson__()
         except:
@@ -60,11 +59,11 @@ class PypiPackageInfo(IPackageInfo):
          
         
         self.info['versionList']=self.getVersionList()
-        
+
         self.info['averageUpdateInterval']=self.getAverageUpdateInterval()
         updateScore=180/self.info['averageUpdateInterval']#小于一年的更新频率，就拿10分
         self.info['updateScore']=updateScore=min(1,max(updateScore,0.2))*10
-        
+
         #bamboo
         """
         bamboo
@@ -86,8 +85,8 @@ class PypiPackageInfo(IPackageInfo):
         
         hotScore=np.sqrt(self.sumCount/10)
         self.info['hotScore']=hotScore=min(10,max(hotScore,2))
-        
-         
+
+
         maintenanceScore=9-month_diff(self.getLastCommitTime())/2
         self.info['maintenanceScore']=maintenanceScore=min(10,max(maintenanceScore,2))
         
@@ -113,7 +112,7 @@ class PypiPackageInfo(IPackageInfo):
             (version_list[i].versionTime - version_list[i - 1].versionTime).days
             for i in range(1, len(version_list))
         ]
-        
+
         if not intervals:
             return -1
 
@@ -132,17 +131,12 @@ class PypiPackageInfo(IPackageInfo):
             raise Exception('Package not found')
 
         projectUrls = self.__pypiJson__['info']['project_urls']
-        issueLinkKey = None
         for key in projectUrls:
-            if projectUrls[key].find("github.com") > 0 and projectUrls[key].find("github.com/downloads") == -1:
+            if projectUrls[key].find("github.com") > 0:
                 issueLinkKey = key
-                break
-
-        if issueLinkKey is not None:
-            try:
                 self.__authorName__, self.__repoName__ = githubUtils.extractAuthorAndRepoName(projectUrls[issueLinkKey])
-            except:
-                pass
+                if self.__authorName__ is not None:
+                    break
 
     def getVersionList(self):
         """
@@ -188,7 +182,7 @@ class PypiPackageInfo(IPackageInfo):
         self.openCount = githubUtils.getIssueCount(self.__authorName__, self.__repoName__, "is:open " + self.githubIssueFilterSuffix)
         self.closeCount = githubUtils.getIssueCount(self.__authorName__, self.__repoName__, "is:closed " + self.githubIssueFilterSuffix)
 
-        self.__cachedIssueCount__ =self.openCount, self.closeCount
+        self.__cachedIssueCount__ = self.openCount, self.closeCount
         return self.__cachedIssueCount__
 
     def getLastCommitTime(self):
@@ -202,7 +196,6 @@ class PypiPackageInfo(IPackageInfo):
             raise Exception("Not a Github-based project!")
 
         ans = githubUtils.getLatestCommitTime(self.__authorName__, self.__repoName__)
-        print(ans)
         return ans
 
     def getRecommendScore(self) -> float:
@@ -215,7 +208,7 @@ class PypiPackageInfo(IPackageInfo):
 
 
 if __name__ == "__main__":
-    page = PypiPackageInfo("bamboo")
+    page = PypiPackageInfo("pydantic")
     print(page.getVersionList())
     print(page.getLastCommitTime())
     print(page.getIssueCount())

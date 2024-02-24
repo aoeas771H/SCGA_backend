@@ -50,6 +50,10 @@ def getIssueCount(author: str, repo: str, issueFilter: str):
         return 0
 
 
+# 有特殊含义的一级目录名不能作为author名
+authorNameBlackList = ['downloads', 'sponsors']
+
+
 def extractAuthorAndRepoName(url: str) -> tuple:
     """
     Extracts the author and name of a GitHub repository from a URL.
@@ -66,6 +70,9 @@ def extractAuthorAndRepoName(url: str) -> tuple:
 
     author = split_url[3]
     repo_name = split_url[4]
+
+    if author in authorNameBlackList:
+        return None, None
 
     if repo_name.find("#") > 0:
         repo_name = repo_name.split("#")[0]
