@@ -65,6 +65,15 @@ class PypiPackageInfo(IPackageInfo):
         updateScore=180/self.info['averageUpdateInterval']#小于一年的更新频率，就拿10分
         self.info['updateScore']=updateScore=min(1,max(updateScore,0.2))*10
         
+        #bamboo
+        """
+        bamboo
+        pyxhook
+        PytorchNLP
+        mistune
+        drone
+        mars
+        """
         
         if self.__authorName__ is None:
             return 0, "Not a Github-based project!", self.info
@@ -104,7 +113,7 @@ class PypiPackageInfo(IPackageInfo):
             (version_list[i].versionTime - version_list[i - 1].versionTime).days
             for i in range(1, len(version_list))
         ]
-
+        
         if not intervals:
             return -1
 
