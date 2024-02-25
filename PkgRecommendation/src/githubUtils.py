@@ -50,39 +50,49 @@ def getIssueCount(author: str, repo: str, issueFilter: str):
         return 0
 
 
-# 有特殊含义的一级目录名不能作为author名
-authorNameBlackList = ['downloads', 'sponsors']
+class GithubRepo:
+    # github issue界面的筛选表达式，前面的open或者close会自动加上
+    githubIssueFilterSuffix = "error"
 
+    def __init__(self, author, repo):
+        self.__authorName__ = author
+        self.__repoName__ = repo
 
-def extractAuthorAndRepoName(url: str) -> tuple:
-    """
-    Extracts the author and name of a GitHub repository from a URL.
+        self.__cachedIssueCount__: 'tuple[int,int] | None' = None
+        self.__cachedLastCommitTime__: 'datetime | None' = None
 
-    Args:
-    url (str): A string containing the URL of the GitHub repository.
+    def getIssueCount(self):
+        """
 
-    Returns:
-    tuple: A tuple containing the author and name of the GitHub repository.
-    """
-    split_url = url.split('/')
-    if split_url[2] != "github.com":
-        raise Exception("Not a Github-based project!")
+        :return: 返回条件下的open,closed状态的issue数量
+        """
 
-    author = split_url[3]
-    repo_name = split_url[4]
+        if self.__cachedIssueCount__ is not None:
+            return self.__cachedIssueCount__
 
-    if author in authorNameBlackList:
-        return None, None
+        if self.__authorName__ is None:
+            raise Exception("Not a Github-based project!")
 
-    if repo_name.find("#") > 0:
-        repo_name = repo_name.split("#")[0]
+        openCount = getIssueCount(self.__authorName__, self.__repoName__,
+                                  "is:open " + self.githubIssueFilterSuffix)
+        closeCount = getIssueCount(self.__authorName__, self.__repoName__,
+                                   "is:closed " + self.githubIssueFilterSuffix)
 
-    if repo_name.find(".git") > 0:
-        repo_name = repo_name.replace(".git", "")
+        self.__cachedIssueCount__ = openCount, closeCount
+        return self.__cachedIssueCount__
 
-    return author, repo_name
+    def getLastCommitTime(self):
+        if self.__cachedLastCommitTime__ is not None:
+            return self.__cachedLastCommitTime__
+
+        if self.__authorName__ is None:
+            raise Exception("Not a Github-based project!")
+
+        self.__cachedLastCommitTime__ = getLatestCommitTime(self.__authorName__, self.__repoName__)
+        return self.__cachedLastCommitTime__
 
 
 if __name__ == '__main__':
-    print(getLatestCommitTime("nodejs", "node"))
-    print(getIssueCount("nodejs", "node", "state:closed"))
+    testRepo = GithubRepo("nodejs", "node")
+    print(testRepo.getLastCommitTime())
+    print(testRepo.getIssueCount())
