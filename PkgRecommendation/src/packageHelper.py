@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
-
+from openai import OpenAI
+from flask import jsonify
 import requests
 import datetime
-import githubUtils
+import src.githubUtils
 import numpy as np
 def month_diff(target_date):
     # print(target_date)
@@ -50,17 +51,21 @@ class PypiPackageInfo(IPackageInfo):
         return state, reason, data
         
         """
+        print(self.packageName+"syffffffffff")
         self.info = {}
+        self.info['gpt']=None
+        self.info['recommendScore']=None
         try:
             self.__loadJson__()
         except:
             return 0, "Network error or Package not found", self.info
         
-         
+        self.description="请用中文回答我的以下问题：我有一个python第三方包，"
         
         self.info['versionList']=self.getVersionList()
 
         self.info['averageUpdateInterval']=self.getAverageUpdateInterval()
+        self.description=self.description+"它的版本更新频率是"+self.info['averageUpdateInterval']+"天，"
         updateScore=180/self.info['averageUpdateInterval']#小于一年的更新频率，就拿10分
         self.info['updateScore']=updateScore=min(1,max(updateScore,0.2))*10
 
@@ -81,19 +86,52 @@ class PypiPackageInfo(IPackageInfo):
         
         self.sumCount=self.closeCount+self.openCount
         self.info['solveScore']=solveScore=self.closeCount/max(1,self.sumCount)*10
-        
+        self.description=self.description+"它的github库中close的issue为"+str(self.closeCount)+"，open的issue为"+str(self.openCount)+"，"
         
         hotScore=np.sqrt(self.sumCount/10)
         self.info['hotScore']=hotScore=min(10,max(hotScore,2))
 
-
-        maintenanceScore=9-month_diff(self.getLastCommitTime())/2
+        lastCommitTime=self.getLastCommitTime()
+        maintenanceScore=9-month_diff(lastCommitTime)/2
+        self.description=self.description+"它的最后一次commit时间为"+lastCommitTime.strftime("%Y-%m-%d %H:%M:%S")
         self.info['maintenanceScore']=maintenanceScore=min(10,max(maintenanceScore,2))
         
+         
         self.info['recommendScore']=3*updateScore+2.5*solveScore+2*hotScore+2.5*maintenanceScore
         
-        return 1, "ok", self.info
+        self.info['gpt']=self.getDescription()
         
+        return 1, "ok", self.info
+    def getDescription(self):
+            try:
+                print(self.description)
+                gptDescription = ""
+                client = OpenAI(
+                    api_key="sk-YmqNIKPfCAGzR36F6Ku54dMd3Xz5xFHBS33Wep6BQdQof58p",
+                    base_url="https://api.chatanywhere.tech/v1"
+                )    
+                
+                completion = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "你是一个了解python第三方包功能的助手"},
+                        {"role": "user", "content": f"{self.description},请从更新频率，解决问题的可能性，维护程度，该包的流行程度这4个方面，定性地描述这个包。"},
+                    ]
+                )
+                
+                gptDescription=completion.choices[0].message.content
+            except Exception as err:
+                return  {
+                    "message": "error",
+                    "status": 500,
+                    "data": err
+                } 
+            return  {
+                    "message": "Request processed successfully",
+                    "status": 200,
+                    "data": gptDescription
+                } 
+                
         
     def getAverageUpdateInterval(self):
         """
