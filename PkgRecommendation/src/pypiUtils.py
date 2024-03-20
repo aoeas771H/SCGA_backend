@@ -1,5 +1,5 @@
 import datetime
-
+from typing import Tuple, Optional
 import requests
 
 # 有特殊含义的一级目录名不能作为author名
@@ -97,7 +97,7 @@ class PypiProject:
         self.__cachedReleaseList__ = ans
         return ans
 
-    def getGithubAuthorAndRepoName(self) -> tuple[str, str] | None:
+    def getGithubAuthorAndRepoName(self) -> Optional[Tuple[str, str]]:
         if self.__pypiJson__ is None:
             self.loadJson()
 

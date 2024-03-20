@@ -1,18 +1,24 @@
 import datetime
 import numpy as np
 
-from src.githubUtils import GithubRepo
-from src.pypiUtils import PypiProject
-from src.gptUtils import GPTClient
+from githubUtils import GithubRepo
+from pypiUtils import PypiProject
+from gptUtils import GPTClient
+from getSynk import getHealthScore
+import pandas as pd
+from tqdm import tqdm
 
 def month_diff(target_date):
-    # print(target_date)
-    current_date = datetime.datetime.now()
-    year_diff = current_date.year - target_date.year
-    month_diff = current_date.month - target_date.month
+    try:
+        # print(target_date)
+        current_date = datetime.datetime.now()
+        year_diff = current_date.year - target_date.year
+        month_diff = current_date.month - target_date.month
 
-    total_months = year_diff * 12 + month_diff
-    return total_months
+        total_months = year_diff * 12 + month_diff
+        return total_months
+    except:
+        return -1
 
 
 class PackageInfo:
@@ -22,7 +28,7 @@ class PackageInfo:
         self.pypiProject: 'PypiProject' = PypiProject(packageName)
         self.githubRepo: 'GithubRepo | None' = None
 
-    def getInfo(self):
+    def getInfo(self,df):
         """
         return state, reason, data
         
@@ -34,25 +40,13 @@ class PackageInfo:
         try:
             self.pypiProject.loadJson()
         except:
-            return 0, "Network error or Package not found", self.info
+            return df
 
         self.info['versionList'] = self.pypiProject.getVersionList()
 
         self.info['averageUpdateInterval'] = self.getAverageUpdateInterval()
 
-        updateScore = 180 / self.info['averageUpdateInterval']  # 小于半年的更新频率，就拿10分
-        self.info['updateScore'] = updateScore = min(1, max(updateScore, 0.2)) * 10
-
-        # bamboo
-        """
-        bamboo
-        pyxhook
-        PytorchNLP
-        mistune
-        drone
-        mars
-        """
-
+ 
         try:
             self.githubRepo = GithubRepo(*self.pypiProject.getGithubAuthorAndRepoName())
         except Exception as e:
@@ -60,31 +54,30 @@ class PackageInfo:
             pass
 
         if self.githubRepo is None:
-            return 0, "Not a Github-based project!", self.info
+            return df
 
         openCount, closeCount = self.githubRepo.getIssueCount()
+        
+        solveRate=closeCount/(closeCount+openCount+1)
 
         sumCount = closeCount + openCount
         lastCommitTime = self.githubRepo.getLastCommitTime()
+ 
 
-        solveScore = closeCount / max(1, sumCount) * 10
-        self.info['solveScore'] = solveScore
+        month_away=month_diff(lastCommitTime)
+        
+        synkScore=getHealthScore(self.packageName).split("/")[0]
+        
+        infolist=[self.packageName, self.info['averageUpdateInterval'], solveRate,sumCount,month_away,synkScore]
+        print(infolist)
+        df=df._append(pd.Series(infolist, index=df.columns), ignore_index=True)
+        
+        return df
 
-        hotScore = np.sqrt(sumCount / 10)
-        self.info['hotScore'] = hotScore = min(10, max(hotScore, 2))
+ 
+ 
 
-
-        maintenanceScore = 9 - month_diff(lastCommitTime) / 2
-
-        self.info['maintenanceScore'] = maintenanceScore = min(10, max(maintenanceScore, 2))
-
-        self.info['recommendScore'] = 3 * updateScore + 2.5 * solveScore + 2 * hotScore + 2.5 * maintenanceScore
-
-
-        gptClient = GPTClient()
-        self.info['gpt'] = gptClient.getResponse(self.info['averageUpdateInterval'], openCount, closeCount, lastCommitTime)
-
-        return 1, "ok", self.info
+ 
 
 
 
@@ -112,3 +105,25 @@ class PackageInfo:
         # 计算平均间隔
         average_interval = sum(intervals) / len(intervals)
         return average_interval
+    
+    
+if __name__ == "__main__":
+
+    df = pd.DataFrame(columns=['Name', 'averageUpdateInterval', 'solveRate','sumCount','month_away','synkScore'])
+    
+    input_file = "output-2.txt"
+   
+    with open(input_file, 'r', encoding='utf-8') as file:
+        unique_lines =file.readlines()
+        
+        for package_name in tqdm(unique_lines):
+                
+            package_name=package_name[:-1] 
+            print(package_name)
+            page=PackageInfo(package_name)
+            df=page.getInfo(df)
+
+             
+            df.to_excel("synk_info_3.xlsx",index=False)
+             
+ 
